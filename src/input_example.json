@@ -1,0 +1,17 @@
+{
+  "_comment": "All fields except shot_x and shot_y are optional — defaults are shown.",
+
+  "shot_x": 104.0,
+  "shot_y": 45.0,
+
+  "body_part": "Right Foot",
+  "play_type": "Open Play",
+  "under_pressure": false,
+
+  "keeper_x": 118.0,
+  "keeper_y": 42.0,
+
+  "nearest_defender": 10,
+  "defender_density": 0,
+  "defenders_between": 1
+}

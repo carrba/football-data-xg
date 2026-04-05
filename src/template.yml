@@ -1,0 +1,47 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: Football xG prediction Lambda function
+
+Globals:
+  Function:
+    Timeout: 120
+    MemorySize: 1024
+    Runtime: python3.13
+    Environment:
+      Variables:
+        PYTHONPATH: /var/task
+  Api:
+    Cors:
+      AllowOrigin: "'*'"
+      AllowHeaders: "'Content-Type'"
+      AllowMethods: "'POST,OPTIONS'"
+
+Resources:
+  XgPredictFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: football-xg-predict
+      CodeUri: ./
+      Handler: lambda_function.handler
+      Description: Predicts expected goals (xG) probability for a shot
+      Architectures:
+        - x86_64
+      Events:
+        Predict:
+          Type: Api
+          Properties:
+            Path: /predict
+            Method: POST
+        PredictOptions:
+          Type: Api
+          Properties:
+            Path: /predict
+            Method: OPTIONS
+
+Outputs:
+  XgPredictFunction:
+    Description: xG Predict Lambda Function ARN
+    Value: !GetAtt XgPredictFunction.Arn
+  XgApiUrl:
+    Description: API Gateway endpoint URL
+    Value: !Sub "https://ServerlessDeploymentApplication.execute-api.${AWS::Region}.amazonaws.com/Prod/predict"

@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>xG Predictor</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, sans-serif;
+      background: #0d1117;
+      color: #e6edf3;
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 2rem 1rem;
+    }
+
+    .card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 12px;
+      padding: 2rem;
+      width: 100%;
+      max-width: 560px;
+    }
+
+    h1 { font-size: 1.4rem; margin-bottom: 0.25rem; }
+    .subtitle { color: #8b949e; font-size: 0.875rem; margin-bottom: 1.5rem; }
+
+    .field-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .field { display: flex; flex-direction: column; gap: 0.3rem; }
+    .field.full { grid-column: 1 / -1; }
+
+    label { font-size: 0.8rem; color: #8b949e; text-transform: uppercase; letter-spacing: 0.04em; }
+
+    input, select {
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      color: #e6edf3;
+      padding: 0.45rem 0.65rem;
+      font-size: 0.95rem;
+      width: 100%;
+    }
+    input:focus, select:focus { outline: none; border-color: #58a6ff; }
+
+    .section-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #58a6ff;
+      margin: 1.25rem 0 0.5rem;
+    }
+
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.45rem 0;
+    }
+    .checkbox-row input[type=checkbox] { width: auto; }
+    .checkbox-row label { text-transform: none; font-size: 0.9rem; color: #e6edf3; letter-spacing: 0; }
+
+    .endpoint-row {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .endpoint-row input { flex: 1; font-size: 0.82rem; }
+
+    button[type=submit] {
+      width: 100%;
+      padding: 0.65rem;
+      background: #238636;
+      border: 1px solid #2ea043;
+      border-radius: 6px;
+      color: #fff;
+      font-size: 1rem;
+      cursor: pointer;
+      margin-top: 1.25rem;
+      transition: background 0.15s;
+    }
+    button[type=submit]:hover { background: #2ea043; }
+    button[type=submit]:disabled { background: #21262d; border-color: #30363d; color: #484f58; cursor: not-allowed; }
+
+    /* Result */
+    #result { margin-top: 1.5rem; display: none; }
+
+    .xg-display {
+      text-align: center;
+      padding: 1.25rem;
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+    }
+    .xg-label { font-size: 0.75rem; color: #8b949e; text-transform: uppercase; letter-spacing: 0.06em; }
+    .xg-value {
+      font-size: 3rem;
+      font-weight: 700;
+      line-height: 1.1;
+      margin: 0.25rem 0;
+    }
+    .xg-bar-wrap { background: #21262d; border-radius: 4px; height: 8px; overflow: hidden; }
+    .xg-bar { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
+
+    details { border: 1px solid #30363d; border-radius: 6px; overflow: hidden; }
+    summary {
+      padding: 0.6rem 0.8rem;
+      cursor: pointer;
+      font-size: 0.85rem;
+      color: #8b949e;
+      user-select: none;
+      background: #0d1117;
+    }
+    summary:hover { color: #e6edf3; }
+    pre {
+      margin: 0;
+      padding: 0.8rem;
+      font-size: 0.78rem;
+      color: #79c0ff;
+      background: #0d1117;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .error {
+      background: #2d1117;
+      border: 1px solid #f85149;
+      color: #f85149;
+      border-radius: 6px;
+      padding: 0.75rem 1rem;
+      font-size: 0.875rem;
+    }
+  </style>
+</head>
+<body>
+<div class="card">
+  <h1>xG Predictor</h1>
+  <p class="subtitle">Expected goals model — enter shot details below</p>
+
+  <div class="section-label">API Endpoint</div>
+  <div class="endpoint-row">
+    <input type="url" id="endpoint" placeholder="https://<your-lambda-url>.lambda-url.<region>.on.aws/" value="" />
+  </div>
+
+  <form id="xg-form" novalidate>
+    <div class="section-label">Shot Position</div>
+    <details style="margin-bottom:0.75rem;border:1px solid #30363d;border-radius:6px;overflow:hidden">
+      <summary style="padding:0.5rem 0.75rem;cursor:pointer;font-size:0.82rem;color:#8b949e;background:#0d1117;user-select:none">
+        Show pitch coordinate reference
+      </summary>
+      <div style="background:#0d1117;padding:0.5rem;text-align:center">
+        <img src="images/pitch_dims.jpg" alt="Pitch coordinate diagram"
+             style="max-width:100%;height:auto;border-radius:4px;opacity:0.9" />
+        <p style="font-size:0.75rem;color:#8b949e;margin-top:0.4rem">
+          x: 0 (own goal line) → 120 (opponent goal line) &nbsp;|&nbsp; y: 0 (top) → 80 (bottom)
+        </p>
+      </div>
+    </details>
+    <div class="field-group">
+      <div class="field">
+        <label for="shot_x">Shot X <span style="color:#8b949e">(0–120)</span></label>
+        <input type="number" id="shot_x" name="shot_x" value="104" min="0" max="120" step="0.1" required />
+      </div>
+      <div class="field">
+        <label for="shot_y">Shot Y <span style="color:#8b949e">(0–80)</span></label>
+        <input type="number" id="shot_y" name="shot_y" value="45" min="0" max="80" step="0.1" required />
+      </div>
+    </div>
+
+    <div class="section-label">Shot Details</div>
+    <div class="field-group">
+      <div class="field">
+        <label for="body_part">Body Part</label>
+        <select id="body_part" name="body_part">
+          <option>Right Foot</option>
+          <option>Left Foot</option>
+          <option>Head</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="play_type">Play Type</label>
+        <select id="play_type" name="play_type">
+          <option>Open Play</option>
+          <option>Free Kick</option>
+          <option>Penalty</option>
+        </select>
+      </div>
+    </div>
+    <div class="checkbox-row">
+      <input type="checkbox" id="under_pressure" name="under_pressure" />
+      <label for="under_pressure">Under pressure from defender</label>
+    </div>
+
+    <div class="section-label">Goalkeeper</div>
+    <div class="field-group">
+      <div class="field">
+        <label for="keeper_x">Keeper X</label>
+        <input type="number" id="keeper_x" name="keeper_x" value="118" step="0.1" />
+      </div>
+      <div class="field">
+        <label for="keeper_y">Keeper Y</label>
+        <input type="number" id="keeper_y" name="keeper_y" value="40" step="0.1" />
+      </div>
+    </div>
+
+    <div class="section-label">Defenders</div>
+    <div class="field-group">
+      <div class="field">
+        <label for="nearest_defender">Nearest Defender (m)</label>
+        <input type="number" id="nearest_defender" name="nearest_defender" value="2.3" min="0" step="0.1" />
+      </div>
+      <div class="field">
+        <label for="defender_density">Defender Density (0–8)</label>
+        <input type="number" id="defender_density" name="defender_density" value="1" min="0" max="8" step="1" />
+      </div>
+      <div class="field full">
+        <label for="defenders_between">Defenders Between Shot &amp; Goal (0–10)</label>
+        <input type="number" id="defenders_between" name="defenders_between" value="0" min="0" max="10" step="1" />
+      </div>
+    </div>
+
+    <button type="submit" id="submit-btn">Predict xG</button>
+  </form>
+
+  <div id="result">
+    <div class="xg-display" id="xg-display"></div>
+    <details>
+      <summary>Full response JSON</summary>
+      <pre id="json-out"></pre>
+    </details>
+  </div>
+</div>
+
+<script>
+  const form = document.getElementById('xg-form');
+  const btn  = document.getElementById('submit-btn');
+  const resultEl  = document.getElementById('result');
+  const xgDisplay = document.getElementById('xg-display');
+  const jsonOut   = document.getElementById('json-out');
+
+  // Hide keeper/defender fields for Penalty
+  document.getElementById('play_type').addEventListener('change', function () {
+    const isPenalty = this.value === 'Penalty';
+    ['keeper_x','keeper_y','nearest_defender','defender_density','defenders_between'].forEach(id => {
+      const field = document.getElementById(id).closest('.field');
+      field.style.opacity = isPenalty ? '0.35' : '1';
+      document.getElementById(id).disabled = isPenalty;
+    });
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    btn.disabled = true;
+    btn.textContent = 'Predicting…';
+    resultEl.style.display = 'none';
+
+    const endpoint = document.getElementById('endpoint').value.trim();
+
+    const payload = {
+      shot_x:            parseFloat(document.getElementById('shot_x').value),
+      shot_y:            parseFloat(document.getElementById('shot_y').value),
+      body_part:         document.getElementById('body_part').value,
+      play_type:         document.getElementById('play_type').value,
+      under_pressure:    document.getElementById('under_pressure').checked,
+      keeper_x:          parseFloat(document.getElementById('keeper_x').value),
+      keeper_y:          parseFloat(document.getElementById('keeper_y').value),
+      nearest_defender:  parseFloat(document.getElementById('nearest_defender').value),
+      defender_density:  parseInt(document.getElementById('defender_density').value, 10),
+      defenders_between: parseInt(document.getElementById('defenders_between').value, 10),
+    };
+
+    if (payload.play_type === 'Penalty') {
+      delete payload.keeper_x; delete payload.keeper_y;
+      delete payload.nearest_defender; delete payload.defender_density;
+      delete payload.defenders_between;
+    }
+
+    try {
+      const res  = await fetch(endpoint, {
+        method:  'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body:    JSON.stringify(payload),
+      });
+      const data = await res.json();
+
+      // API Gateway wraps in statusCode/body; direct Lambda returns it flat
+      const parsed = (typeof data.body === 'string') ? JSON.parse(data.body) : data.body ?? data;
+
+      if (!res.ok || parsed.error) {
+        showError(parsed.error || `HTTP ${res.status}`);
+      } else {
+        showResult(parsed);
+      }
+    } catch (err) {
+      showError(err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Predict xG';
+    }
+  });
+
+  function showResult(data) {
+    const xg  = data.xg ?? 0;
+    const pct = (xg * 100).toFixed(1);
+    const color = xg < 0.10 ? '#f85149' : xg < 0.25 ? '#e3b341' : '#2ea043';
+
+    xgDisplay.innerHTML = `
+      <div class="xg-label">Expected Goals</div>
+      <div class="xg-value" style="color:${color}">${pct}<span style="font-size:1.5rem;color:#8b949e">%</span></div>
+      <div class="xg-bar-wrap" style="margin-top:0.5rem">
+        <div class="xg-bar" style="width:${Math.min(xg * 100, 100)}%;background:${color}"></div>
+      </div>`;
+
+    jsonOut.textContent = JSON.stringify(data, null, 2);
+    resultEl.style.display = 'block';
+  }
+
+  function showError(msg) {
+    xgDisplay.innerHTML = `<div class="error">${msg}</div>`;
+    jsonOut.textContent = '';
+    resultEl.style.display = 'block';
+  }
+</script>
+</body>
+</html>
