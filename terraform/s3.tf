@@ -2,26 +2,18 @@ resource "aws_s3_bucket" "app" {
   bucket = "${var.project}-app"
 }
 
-# Block all public access to the bucket by default; we grant read via bucket policy
+# Block all public access — objects are served exclusively through CloudFront via OAC
 resource "aws_s3_bucket_public_access_block" "app" {
   bucket = aws_s3_bucket.app.id
 
-  block_public_acls       = false
-  block_public_policy     = false
-  ignore_public_acls      = false
-  restrict_public_buckets = false
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
 }
 
-resource "aws_s3_bucket_website_configuration" "app" {
-  bucket = aws_s3_bucket.app.id
-
-  index_document {
-    suffix = "index.html"
-  }
-}
-
-# Public read policy for the index.html static site only
-resource "aws_s3_bucket_policy" "app_public_read" {
+# Allow CloudFront (identified by its distribution ARN via OAC) to read objects
+resource "aws_s3_bucket_policy" "app_cloudfront" {
   bucket = aws_s3_bucket.app.id
 
   depends_on = [aws_s3_bucket_public_access_block.app]
@@ -30,14 +22,18 @@ resource "aws_s3_bucket_policy" "app_public_read" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid       = "PublicReadStatic"
-        Effect    = "Allow"
-        Principal = "*"
-        Action    = "s3:GetObject"
-        Resource  = [
-          "${aws_s3_bucket.app.arn}/index.html",
-          "${aws_s3_bucket.app.arn}/images/*"
-        ]
+        Sid    = "AllowCloudFrontOAC"
+        Effect = "Allow"
+        Principal = {
+          Service = "cloudfront.amazonaws.com"
+        }
+        Action   = "s3:GetObject"
+        Resource = "${aws_s3_bucket.app.arn}/*"
+        Condition = {
+          StringEquals = {
+            "aws:SourceArn" = aws_cloudfront_distribution.app.arn
+          }
+        }
       }
     ]
   })

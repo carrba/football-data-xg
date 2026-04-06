@@ -1,6 +1,6 @@
-output "website_url" {
-  description = "S3 static website URL for the xG predictor page"
-  value       = "http://${aws_s3_bucket_website_configuration.app.website_endpoint}"
+output "cloudfront_url" {
+  description = "CloudFront URL for the xG predictor page"
+  value       = "https://${aws_cloudfront_distribution.app.domain_name}"
 }
 
 output "lambda_function_url" {
