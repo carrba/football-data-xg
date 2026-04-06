@@ -155,6 +155,7 @@ def _build_features(params: dict) -> dict:
 # Lambda entry point
 # ---------------------------------------------------------------------------
 _RESPONSE_HEADERS = {"Content-Type": "application/json"}
+_ORIGIN_SECRET = os.environ.get("ORIGIN_SECRET", "")
 
 
 def handler(event: dict, context=None) -> dict:
@@ -162,6 +163,18 @@ def handler(event: dict, context=None) -> dict:
     AWS Lambda handler — supports both direct invocation and Lambda function URL.
     CORS is handled by the function URL configuration, not here.
     """
+    # Reject requests that don't carry the CloudFront origin secret.
+    # The header is injected by CloudFront and never visible to browsers.
+    # Skip the check when ORIGIN_SECRET is not set (local dev / direct invocation).
+    if _ORIGIN_SECRET:
+        incoming = (event.get("headers") or {}).get("x-origin-secret", "")
+        if not incoming or incoming != _ORIGIN_SECRET:
+            return {
+                "statusCode": 403,
+                "headers": _RESPONSE_HEADERS,
+                "body": json.dumps({"error": "Forbidden"}),
+            }
+
     _load_models()
 
     # API Gateway HTTP API wraps the body as a JSON string under "body"

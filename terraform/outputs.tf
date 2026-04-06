@@ -26,3 +26,4 @@ output "docker_push_commands" {
     docker push ${aws_ecr_repository.xg_predict.repository_url}:latest
   EOT
 }
+

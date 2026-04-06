@@ -47,6 +47,7 @@ resource "aws_lambda_function" "xg_predict" {
   environment {
     variables = {
       MODELS_BUCKET = aws_s3_bucket.app.id
+      ORIGIN_SECRET = var.origin_secret
     }
   }
 }
