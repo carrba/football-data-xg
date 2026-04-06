@@ -6,12 +6,6 @@ resource "aws_cloudfront_origin_access_control" "app" {
   signing_protocol                  = "sigv4"
 }
 
-# Random secret shared between CloudFront and Lambda
-resource "random_password" "origin_secret" {
-  length  = 32
-  special = false
-}
-
 resource "aws_cloudfront_distribution" "app" {
   enabled             = true
   default_root_object = "index.html"
@@ -37,7 +31,7 @@ resource "aws_cloudfront_distribution" "app" {
 
     custom_header {
       name  = "X-Origin-Secret"
-      value = random_password.origin_secret.result
+      value = var.origin_secret
     }
   }
 

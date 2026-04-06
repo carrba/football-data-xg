@@ -25,6 +25,7 @@ images/
 *.tfstate.*
 *.tfstate.backup
 *.hcl
+*.tfvars
 terraform/response.json
 terraform/lambda_package.zip
 

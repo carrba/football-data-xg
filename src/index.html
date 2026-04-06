@@ -70,13 +70,6 @@
     .checkbox-row input[type=checkbox] { width: auto; }
     .checkbox-row label { text-transform: none; font-size: 0.9rem; color: #e6edf3; letter-spacing: 0; }
 
-    .endpoint-row {
-      display: flex;
-      gap: 0.5rem;
-      margin-bottom: 1.5rem;
-    }
-    .endpoint-row input { flex: 1; font-size: 0.82rem; }
-
     button[type=submit] {
       width: 100%;
       padding: 0.65rem;
@@ -148,11 +141,6 @@
 <div class="card">
   <h1>xG Predictor</h1>
   <p class="subtitle">Expected goals model — enter shot details below</p>
-
-  <div class="section-label">API Endpoint</div>
-  <div class="endpoint-row">
-    <input type="url" id="endpoint" placeholder="https://<your-lambda-url>.lambda-url.<region>.on.aws/" value="" />
-  </div>
 
   <form id="xg-form" novalidate>
     <div class="section-label">Shot Position</div>
@@ -267,7 +255,7 @@
     btn.textContent = 'Predicting…';
     resultEl.style.display = 'none';
 
-    const endpoint = document.getElementById('endpoint').value.trim();
+    const endpoint = '/predict';
 
     const payload = {
       shot_x:            parseFloat(document.getElementById('shot_x').value),
