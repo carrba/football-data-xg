@@ -17,3 +17,10 @@ resource "aws_lambda_permission" "public_access" {
   principal              = "*"
   function_url_auth_type = "NONE"
 }
+
+resource "aws_lambda_permission" "public_invoke" {
+  statement_id  = "AllowPublicInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.xg_predict.function_name
+  principal     = "*"
+}
