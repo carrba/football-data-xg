@@ -1,3 +1,4 @@
+# Lambda Function URL — NONE auth; protected by X-Origin-Secret custom header
 resource "aws_lambda_function_url" "xg_predict" {
   function_name      = aws_lambda_function.xg_predict.function_name
   authorization_type = "NONE"
@@ -16,11 +17,4 @@ resource "aws_lambda_permission" "public_access" {
   function_name          = aws_lambda_function.xg_predict.function_name
   principal              = "*"
   function_url_auth_type = "NONE"
-}
-
-resource "aws_lambda_permission" "public_invoke" {
-  statement_id  = "AllowPublicInvoke"
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.xg_predict.function_name
-  principal     = "*"
 }
