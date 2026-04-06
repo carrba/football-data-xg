@@ -15,3 +15,15 @@ variable "origin_secret" {
   type        = string
   sensitive   = true
 }
+
+variable "alarm_email" {
+  description = "Email address to notify when an alarm fires (leave empty to skip)"
+  type        = string
+  default     = ""
+}
+
+variable "alarm_sms" {
+  description = "Phone number (E.164 format, e.g. +447700900000) to notify when an alarm fires (leave empty to skip)"
+  type        = string
+  default     = ""
+}
