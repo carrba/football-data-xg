@@ -19,20 +19,27 @@ jobs:
       security-events: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Build Docker image
-        run: docker build -t football-data-xg:latest .
+        run: docker build -t football-data-xg:latest -f src/Dockerfile src
 
       - name: Run Grype scan
-        uses: anchore/scan-action@v3
+        uses: anchore/scan-action@v7
         id: grype
         with:
           image: football-data-xg:latest
           fail-build: false
+          output-file: grype-results.sarif
           output-format: sarif
 
+      - name: Validate SARIF JSON
+        run: |
+          test -f grype-results.sarif
+          test -s grype-results.sarif
+          jq empty grype-results.sarif
+
       - name: Upload Grype results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v4
         with:
-          sarif_file: ${{ steps.grype.outputs.sarif }}
+          sarif_file: grype-results.sarif
