@@ -32,3 +32,6 @@ jobs:
         with:
           name: sbom
           path: sbom.json
+
+      - name: Display SBOM components
+        run: syft sbom sbom.json -o table
