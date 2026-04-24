@@ -29,7 +29,8 @@ jobs:
         id: grype
         with:
           image: football-data-xg:latest
-          fail-build: false
+          fail-build: true
+          severity-cutoff: high
           output-file: grype-results.sarif
           output-format: sarif
 
