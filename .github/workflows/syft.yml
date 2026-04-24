@@ -34,4 +34,4 @@ jobs:
           path: sbom.json
 
       - name: Display SBOM components
-        run: syft sbom.json -o table
+        run: cat sbom.json | jq '.' || syft . -o table
