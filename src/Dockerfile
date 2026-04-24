@@ -1,9 +1,9 @@
 FROM public.ecr.aws/lambda/python:3.13.2026.02.27.19-arm64
 
 # Update + install packages
-RUN microdnf update -y && \
-    microdnf install -y git && \
-    microdnf clean all
+# RUN microdnf update -y && \
+#     microdnf install -y git && \
+#     microdnf clean all
 
 # Install dependencies
 COPY requirements.txt .
