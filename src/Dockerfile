@@ -1,4 +1,7 @@
-FROM public.ecr.aws/lambda/python:3.13.1
+FROM public.ecr.aws/lambda/python:3.13
+
+# Install updates
+microdnf update -y
 
 # Install dependencies
 COPY requirements.txt .
