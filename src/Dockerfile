@@ -1,4 +1,4 @@
-FROM public.ecr.aws/lambda/python:3.13.2026.02.27.19-arm64
+FROM public.ecr.aws/lambda/python:3.13.2025.08.11.19
 
 # Update + install packages
 # RUN microdnf update -y && \
