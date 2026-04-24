@@ -30,13 +30,15 @@ jobs:
         with:
           image: football-data-xg:latest
           fail-build: false
-          output-file: grype-results.sarif
           output-format: sarif
 
       - name: Validate SARIF JSON
-        run: jq empty grype-results.sarif
+        run: |
+          test -n "${{ steps.grype.outputs.sarif }}"
+          test -f "${{ steps.grype.outputs.sarif }}"
+          jq empty "${{ steps.grype.outputs.sarif }}"
 
       - name: Upload Grype results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: grype-results.sarif
+          sarif_file: ${{ steps.grype.outputs.sarif }}
