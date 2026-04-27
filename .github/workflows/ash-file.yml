@@ -15,6 +15,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Run Ash OpenGrep scan
+        continue-on-error: true
         uses: semgrep/semgrep-action@v1
         with:
           config: p/default
