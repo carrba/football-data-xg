@@ -18,17 +18,26 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
+
+      - name: Build Docker image
+        run: docker build -t football-data-xg:latest -f src/Dockerfile src
 
       - name: Run Syft scan
         uses: anchore/sbom-action@v0
         with:
-          path: .
+          image: football-data-xg:latest
           format: json
           output-file: sbom.json
 
       - name: Upload SBOM
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: sbom
           path: sbom.json
+
+      - name: Show SBOM (grouped)
+        run: |
+          echo "::group::SBOM (CycloneDX JSON)"
+          cat sbom.json
+          echo "::endgroup::"
