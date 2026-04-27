@@ -1,8 +1,12 @@
 name: Ash Grype Scan & Syft SBOM
 
+permissions:
+  contents: read
+  security-events: write
+
 on:
   push:
-    branches: [ main ]
+    branches: [ '**' ]
   pull_request:
     branches: [ main ]
   schedule:
@@ -13,12 +17,13 @@ jobs:
   scan:
     runs-on: ubuntu-latest
     permissions:
+      actions: read
       contents: read
       security-events: write
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Build Docker image
         run: docker build -t football-data-xg:latest -f src/Dockerfile src
@@ -28,8 +33,28 @@ jobs:
         with:
           image: football-data-xg:latest
           fail-build: false
-          output-format: json
-          output-file: grype-report.json
+          output-format: sarif
+          output-file: grype-results.sarif
+
+      - name: Validate Grype SARIF file
+        if: always()
+        run: |
+          test -f grype-results.sarif
+          test -s grype-results.sarif
+          jq empty grype-results.sarif
+      
+      - name: Upload Grype SARIF to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v4
+        if: always()
+        with:
+          sarif_file: grype-results.sarif
+          category: grype-scan
+      
+      - name: Output Grype Report to stdout
+        if: always()
+        run: |
+          echo "=== Grype Vulnerability Report ==="
+          jq '.runs[0].results[] | {ruleId: .ruleId, level: .level, message: .message.text}' grype-results.sarif
       
       - name: Generate Syft SBOM
         uses: anchore/sbom-action@v0
@@ -43,7 +68,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: grype-scan-report
-          path: grype-report.json
+          path: grype-results.sarif
       
       - name: Upload Syft SBOM
         if: always()
