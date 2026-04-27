@@ -42,7 +42,7 @@ jobs:
         if: always()
         run: |
           echo "=== Grype Vulnerability Report ==="
-          jq '.matches[] | {vulnerability: .vulnerability.id, severity: .vulnerability.severity, package: .artifact.name}' grype-report.json
+          jq '.runs[0].results[] | {ruleId: .ruleId, level: .level, message: .message.text}' grype-results.sarif
       
       - name: Generate Syft SBOM
         uses: anchore/sbom-action@v0
