@@ -18,7 +18,7 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
       
       - name: Run AWS ASH Grype Scan
         uses: aws-prototyping-sdk/aws-ash-oss-repos-grype-action@main
@@ -36,14 +36,14 @@ jobs:
       
       - name: Upload Grype Report
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: grype-scan-report
           path: grype-report.json
       
       - name: Upload Syft SBOM
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: syft-sbom
           path: syft-sbom.spdx.json
