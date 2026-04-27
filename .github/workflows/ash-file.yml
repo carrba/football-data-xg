@@ -7,11 +7,12 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+permissions:
+    contents: read
+
 jobs:
   ash-opengrep-and-checkov:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
