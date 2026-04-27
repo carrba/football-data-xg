@@ -20,10 +20,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
+      - name: Build Docker image
+        run: docker build -t football-data-xg:latest -f src/Dockerfile src
+
       - name: Run Syft scan
         uses: anchore/sbom-action@v0
         with:
-          path: .
+          image: football-data-xg:latest
           format: json
           output-file: sbom.json
 
