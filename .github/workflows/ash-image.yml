@@ -28,8 +28,15 @@ jobs:
         with:
           image: football-data-xg:latest
           fail-build: false
-          output-format: json
-          output-file: grype-report.json
+          output-format: sarif
+          output-file: grype-results.sarif
+      
+      - name: Upload Grype SARIF to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: grype-results.sarif
+          category: grype-scan
       
       - name: Output Grype Report to stdout
         if: always()
