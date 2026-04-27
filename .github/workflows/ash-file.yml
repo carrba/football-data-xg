@@ -19,3 +19,10 @@ jobs:
         uses: semgrep/semgrep-action@v1
         with:
           config: p/default
+
+      - name: Run Checkov scan
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: .
+          quiet: true
+          soft_fail: true
