@@ -21,10 +21,11 @@ jobs:
         uses: actions/checkout@v6
       
       - name: Run AWS ASH Grype Scan
-        uses: aws-prototyping-sdk/aws-ash-oss-repos-grype-action@main
+        uses: anchore/scan-action@v7
         with:
-          gryp-version: latest
+          path: .
           fail-build: true
+          output-format: json
           output-file: grype-report.json
       
       - name: Generate Syft SBOM
