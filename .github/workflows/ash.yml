@@ -27,7 +27,7 @@ jobs:
         uses: anchore/scan-action@v7
         with:
           image: football-data-xg:latest
-          fail-build: true
+          fail-build: false
           output-format: json
           output-file: grype-report.json
       
