@@ -36,5 +36,8 @@ jobs:
           name: sbom
           path: sbom.json
 
-      - name: Display SBOM components
-        run: cat sbom.json | jq '.' || syft . -o table
+      - name: Show SBOM (grouped)
+        run: |
+          echo "::group::SBOM (CycloneDX JSON)"
+          cat sbom.json
+          echo "::endgroup::"
