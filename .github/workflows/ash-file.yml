@@ -1,0 +1,20 @@
+name: Ash OpenGrep Scan
+
+on:
+  push:
+    branches: [ main, sbom ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  ash-opengrep:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Run Ash OpenGrep scan
+        uses: ashfunctionsecurity/ash-cli-action@v1
+        with:
+          args: opengrep --recursive .
