@@ -1,4 +1,4 @@
-name: Ash OpenGrep Scan
+name: Ash OpenGrep & Checkov Scan
 
 on:
   push:
@@ -8,19 +8,19 @@ on:
   workflow_dispatch:
 
 jobs:
-  ash-opengrep:
+  ash-opengrep-and-checkov:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      - name: Run Ash OpenGrep scan
+      - name: OpenGrep Scan
         continue-on-error: true
         uses: semgrep/semgrep-action@v1
         with:
           config: p/default
 
-      - name: Run Checkov scan
+      - name: Checkov Scan
         uses: bridgecrewio/checkov-action@master
         with:
           directory: .

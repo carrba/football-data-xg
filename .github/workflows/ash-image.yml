@@ -1,4 +1,4 @@
-name: AWS ASH - Grype Scan and Syft SBOM
+name: Ash Grype Scan & Syft SBOM
 
 on:
   push:
@@ -23,7 +23,7 @@ jobs:
       - name: Build Docker image
         run: docker build -t football-data-xg:latest -f src/Dockerfile src
       
-      - name: Run AWS ASH Grype Scan
+      - name: Grype Scan
         uses: anchore/scan-action@v7
         with:
           image: football-data-xg:latest
