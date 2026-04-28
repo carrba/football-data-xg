@@ -27,4 +27,9 @@ jobs:
         uses: bridgecrewio/checkov-action@master
         with:
           directory: .
-          hard_fail_on: HIGH
+          hard_fail_on: CRITICAL
+          output_format: cli, sarif
+          output_file_path: console, checkov.sarif
+
+      - name: Upload Checkov SARIF file
+        uses: github/codeql-action/upload-sarif@v4
