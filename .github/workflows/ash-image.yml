@@ -23,9 +23,14 @@ jobs:
       security-events: write # Required for collection of SARIF code scanning results for GitHub Advanced Security checks
     with:
       ash-version: v3
+      ash-mode: container
+      config: .ash/ash.yaml
       fail-on-findings: true
       collect-junit-xml-report: true
       collect-sarif-report: true
+      install-grype: true
+      install-syft: true
+      install-opengrep: true
       post-pr-comment: true
       verbose: true
       output-dir: '.ash/ash_output'
