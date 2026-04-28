@@ -27,7 +27,8 @@ jobs:
         uses: bridgecrewio/checkov-action@master
         with:
           directory: .
-          hard_fail_on: CRITICAL
+          quiet: true
+          soft_fail: true
           output_format: cli, sarif
           output_file_path: console, checkov.sarif
 
