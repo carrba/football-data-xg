@@ -6,7 +6,7 @@ permissions:
 
 on:
   push:
-    branches: [ 'main', ash ]
+    branches: [ main, ash ]
   pull_request:
     branches: [ main ]
   schedule:
