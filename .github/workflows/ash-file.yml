@@ -28,6 +28,7 @@ jobs:
         uses: semgrep/semgrep-action@v1
         with:
           config: p/default
+          generateSarif: true
 
       - name: Checkov Scan
         uses: bridgecrewio/checkov-action@master
