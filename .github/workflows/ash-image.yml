@@ -14,36 +14,18 @@ on:
   workflow_dispatch:
 
 jobs:
-  scan:
-    runs-on: ubuntu-latest
+  ash:
+    uses: awslabs/automated-security-helper/.github/workflows/run-ash-security-scan.yml@v3
     permissions:
-      actions: read
-      contents: read
-      security-events: write
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Run ASH security scan
-        id: ash
-        uses: awslabs/automated-security-helper-action@v3
-        with:
-          source-directory: .
-          ash-mode: container
-          scanners: grype,syft
-          fail-on-findings: false
-          severity-threshold: medium
-          output-format: both
-          upload-sarif: true
-          sarif-category: ash-grype-scan
-          upload-artifacts: true
-          artifact-retention-days: 30
-          pr-comment: false
-
-      - name: Output ASH summary
-        if: always()
-        run: |
-          echo "ASH findings: ${{ steps.ash.outputs.findings-count }}"
-          echo "Critical: ${{ steps.ash.outputs.critical-findings }}"
-          echo "High: ${{ steps.ash.outputs.high-findings }}"
+      contents: read # Required to read the repository contents in order to scan them with ASH
+      checks: write # Required for writing CI check runs
+      pull-requests: write # Required for writing comments with scan results to pull requests
+      security-events: write # Required for collection of SARIF code scanning results for GitHub Advanced Security checks
+    with:
+      ash-version: v3
+      fail-on-findings: true
+      collect-junit-xml-report: true
+      collect-sarif-report: true
+      post-pr-comment: true
+      verbose: true
+      output-dir: '.ash/ash_output'
