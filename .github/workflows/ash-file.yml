@@ -9,6 +9,7 @@ on:
 
 permissions:
     contents: read
+    security-events: read
 
 jobs:
   ash-opengrep-and-checkov:
