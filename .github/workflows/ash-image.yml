@@ -27,7 +27,7 @@ jobs:
 
       - name: Run ASH security scan
         id: ash
-        uses: aws-actions/automated-security-helper-action@v2
+        uses: awslabs/automated-security-helper-action@v3
         with:
           source-directory: .
           ash-mode: container
