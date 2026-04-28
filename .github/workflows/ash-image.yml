@@ -27,10 +27,10 @@ jobs:
       config: .ash/ash.yaml
       fail-on-findings: true
       collect-junit-xml-report: true
-      collect-sarif-report: true
+      collect-sarif-report: ${{ github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork }}
       install-grype: true
       install-syft: true
       install-opengrep: true
-      post-pr-comment: true
+      post-pr-comment: ${{ github.event_name == 'pull_request' && !github.event.pull_request.head.repo.fork }}
       verbose: true
       output-dir: '.ash/ash_output'
