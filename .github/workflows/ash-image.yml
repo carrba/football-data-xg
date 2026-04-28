@@ -1,4 +1,4 @@
-name: Ash Grype Scan & Syft SBOM
+name: ASH Image Security Scan
 
 permissions:
   contents: read
@@ -6,7 +6,7 @@ permissions:
 
 on:
   push:
-    branches: [ 'main' ]
+    branches: [ 'main', ash ]
   pull_request:
     branches: [ main ]
   schedule:
@@ -25,54 +25,25 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Build Docker image
-        run: docker build -t football-data-xg:latest -f src/Dockerfile src
-      
-      - name: Grype Scan
-        uses: anchore/scan-action@v7
+      - name: Run ASH security scan
+        id: ash
+        uses: aws-actions/automated-security-helper-action@v2
         with:
-          image: football-data-xg:latest
-          fail-build: false
-          output-format: sarif
-          output-file: grype-results.sarif
+          source-directory: .
+          ash-mode: container
+          scanners: grype,syft
+          fail-on-findings: false
+          severity-threshold: medium
+          output-format: both
+          upload-sarif: true
+          sarif-category: ash-grype-scan
+          upload-artifacts: true
+          artifact-retention-days: 30
+          pr-comment: false
 
-      - name: Validate Grype SARIF file
+      - name: Output ASH summary
         if: always()
         run: |
-          test -f grype-results.sarif
-          test -s grype-results.sarif
-          jq empty grype-results.sarif
-      
-      - name: Upload Grype SARIF to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v4
-        if: always()
-        with:
-          sarif_file: grype-results.sarif
-          category: grype-scan
-      
-      - name: Output Grype Report to stdout
-        if: always()
-        run: |
-          echo "=== Grype Vulnerability Report ==="
-          jq '.runs[0].results[] | {ruleId: .ruleId, level: .level, message: .message.text}' grype-results.sarif
-      
-      - name: Generate Syft SBOM
-        uses: anchore/sbom-action@v0
-        with:
-          image: football-data-xg:latest
-          format: spdx-json
-          output-file: syft-sbom.spdx.json
-      
-      - name: Upload Grype Report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: grype-scan-report
-          path: grype-results.sarif
-      
-      - name: Upload Syft SBOM
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: syft-sbom
-          path: syft-sbom.spdx.json
+          echo "ASH findings: ${{ steps.ash.outputs.findings-count }}"
+          echo "Critical: ${{ steps.ash.outputs.critical-findings }}"
+          echo "High: ${{ steps.ash.outputs.high-findings }}"
