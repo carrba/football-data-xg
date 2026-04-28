@@ -1,4 +1,4 @@
-name: ASH Image Security Scan
+name: ASH Scan
 
 permissions:
   contents: read
@@ -6,7 +6,7 @@ permissions:
 
 on:
   push:
-    branches: [ main, ash ]
+    branches: [ main ]
   pull_request:
     branches: [ main ]
   schedule:
