@@ -27,5 +27,4 @@ jobs:
         uses: bridgecrewio/checkov-action@master
         with:
           directory: .
-          quiet: true
-          soft_fail: true
+          hard_fail_on: MEDIUM
