@@ -29,7 +29,7 @@ jobs:
       config: .ash/ash.yaml
       fail-on-findings: true
       collect-junit-xml-report: true
-      collect-sarif-report: ${{ github.actor != 'dependabot[bot]' && (github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork) }}
+      collect-sarif-report: ${{ github.actor != 'dependabot[bot]' && github.event_name != 'pull_request' }}
       install-grype: true
       install-syft: true
       install-opengrep: true
