@@ -125,8 +125,13 @@ terraform apply -var-file=terraform.tfvars
 # 2. Build & push the container image (commands printed by Terraform)
 terraform output -raw docker_push_commands | bash
 
-# 3. Re-apply so the Lambda picks up the pushed image
-terraform apply -var-file=terraform.tfvars
+# 3. Roll the Lambda onto the freshly pushed image.
+#    image_uri is pinned to the mutable ":latest" tag, so `terraform apply`
+#    sees no change after a push — update the function code directly:
+aws lambda update-function-code \
+  --function-name football-xg-predict \
+  --image-uri "$(terraform output -raw ecr_repository_url):latest"
+# (equivalently: terraform apply -replace=aws_lambda_function.xg_predict)
 ```
 
 `index.html`, the pitch diagram, and the model artefacts under `models/` are
