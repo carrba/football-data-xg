@@ -37,7 +37,10 @@ import pandas as pd
 # and inside a Lambda deployment package.
 # ---------------------------------------------------------------------------
 _HERE = os.path.dirname(os.path.abspath(__file__))
-_MODELS_DIR = os.environ.get("MODELS_DIR", os.path.join(_HERE, "models"))
+# Local-dev fallback: the notebooks and Terraform (s3.tf) treat the repo-root
+# "models/" directory as canonical. In Lambda, MODELS_BUCKET is always set and
+# the artefacts are pulled from S3 instead.
+_MODELS_DIR = os.environ.get("MODELS_DIR", os.path.join(_HERE, os.pardir, "models"))
 _MODELS_BUCKET = os.environ.get("MODELS_BUCKET")
 _MODELS_CACHE = "/tmp/models"
 

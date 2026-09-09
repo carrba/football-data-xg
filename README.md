@@ -32,9 +32,11 @@ src/
   requirements.txt    # Python deps: xgboost, scikit-learn, pandas, boto3
   build_image.ps1     # PowerShell helper to build & push the Docker image
   input_example.json  # Example request payload
-  models/             # Trained model artefacts (xgboost.pkl, preprocessor.pkl)
 
-terraform/            # Infrastructure-as-Code (AWS, Terraform ≥ 5.x provider)
+models/               # Trained model artefacts (xgboost.pkl, preprocessor.pkl) — git-ignored
+                      # Written by 02_train_xg_model.ipynb, uploaded to S3 by Terraform
+
+terraform/            # Infrastructure-as-Code (AWS provider ~> 6.x)
   main.tf             # Provider & backend config
   lambda.tf           # Lambda function + IAM role
   ecr.tf              # ECR repository for the container image
@@ -79,7 +81,7 @@ pip install -r src/requirements.txt
 Open the notebooks in order:
 
 1. `01_load_statsbomb_data.ipynb` — builds `data/shots_clean.csv` from the raw StatsBomb event files.
-2. `02_train_xg_model.ipynb` — trains the XGBoost model and saves artefacts under `src/models/`.
+2. `02_train_xg_model.ipynb` — trains the XGBoost model and saves artefacts under `models/` (repo root).
 3. `03_predict_from_image.ipynb` — optional: run predictions from a pitch image.
 
 ### 3. Test the Lambda handler locally
@@ -88,7 +90,7 @@ Open the notebooks in order:
 python - <<'EOF'
 import json, src.lambda_function as lf
 event = json.load(open("src/input_example.json"))
-print(lf.lambda_handler(event, None))
+print(lf.handler(event, None))
 EOF
 ```
 
@@ -108,9 +110,9 @@ Browser → CloudFront → S3 (index.html)
 
 ### Prerequisites
 
-- AWS CLI configured (`aws configure` or named profile `my-profile`)
+- AWS CLI configured — Terraform uses the named profile set in `terraform/main.tf` (`itbc-test` by default; change it or override with `AWS_PROFILE`)
 - Docker (for building the Lambda container image)
-- Terraform ≥ 1.5
+- Terraform ≥ 1.5 (AWS provider `~> 6.42`, pinned in `terraform/main.tf`)
 
 ### Deploy
 
@@ -123,10 +125,13 @@ terraform apply -var-file=terraform.tfvars
 # 2. Build & push the container image (commands printed by Terraform)
 terraform output -raw docker_push_commands | bash
 
-# 3. Upload the web UI and model artefacts to S3
-aws s3 cp src/index.html        s3://<bucket>/index.html
-aws s3 cp src/models/           s3://<bucket>/models/ --recursive
+# 3. Re-apply so the Lambda picks up the pushed image
+terraform apply -var-file=terraform.tfvars
 ```
+
+`index.html`, the pitch diagram, and the model artefacts under `models/` are
+uploaded to S3 by Terraform (`s3.tf`) — no manual `aws s3 cp` step is needed.
+Re-run `terraform apply` whenever those files change.
 
 The `cloudfront_url` Terraform output is the public URL for the xG predictor.
 
