@@ -2,5 +2,5 @@ boto3
 joblib
 numpy
 pandas
-xgboost
+xgboost-cpu
 scikit-learn
