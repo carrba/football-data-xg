@@ -15,7 +15,7 @@ Optional fields (defaults shown):
   under_pressure  : bool   — was a defender within ~2 m at the moment?       [default: false]
   keeper_x        : float  — goalkeeper x position (26–120)                  [default: 118.0]
   keeper_y        : float  — goalkeeper y position (21–61)                   [default: 40.0]
-  defenders       : list   — [[x, y], ...] outfield defender positions (max 20). When
+  defenders       : list   — [[x, y], ...] outfield defender positions (max 10). When
                              given, the three fields below are computed from it
                              (src/features.py) and any values sent for them are ignored.
   nearest_defender: float  — straight-line distance to closest defender      [default: 2.3]
@@ -79,7 +79,7 @@ def _load_models():
 # ---------------------------------------------------------------------------
 VALID_BODY_PARTS = {"Right Foot", "Left Foot", "Head", "Other"}
 VALID_PLAY_TYPES = {"Open Play", "Free Kick", "Penalty"}
-MAX_DEFENDERS = 20
+MAX_DEFENDERS = 10  # outfield players
 # Medians in data/shots_clean.csv — notebook 02 fills missing values with them,
 # so inputs the model never had in training (no defenders placed, penalties)
 # get the same treatment here.

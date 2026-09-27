@@ -320,12 +320,14 @@
   const RIGHT_POST = { x: 120, y: 44 };
   const DENSITY_RADIUS = 5;
   const PENALTY_SPOT = { x: 108, y: 40 };
+  const MAX_DEFENDERS = 10;  // outfield players; matches the API limit
   const SVG_NS = 'http://www.w3.org/2000/svg';
 
   const HINTS = {
     shooter: 'Click the pitch to place the shooter. Drag any marker to move it.',
     keeper: 'Click the pitch to place the goalkeeper.',
     defender: 'Click to add a defender; click a defender to remove it. Drag to move.',
+    defenderMax: `All ${MAX_DEFENDERS} outfield defenders placed — click one to remove it, or drag to move.`,
     penalty: 'Penalty — shot is taken from the spot; keeper and defenders are not used.',
   };
 
@@ -424,7 +426,8 @@
         || (b.dataset.tool === 'defender' && manualDefenders());
     });
     $('clear-defenders').disabled = isPenalty() || manualDefenders() || !state.defenders.length;
-    $('hint').textContent = isPenalty() ? HINTS.penalty : HINTS[state.tool];
+    const atMax = state.tool === 'defender' && state.defenders.length >= MAX_DEFENDERS;
+    $('hint').textContent = isPenalty() ? HINTS.penalty : atMax ? HINTS.defenderMax : HINTS[state.tool];
 
     setInput('shot_x', s.x);
     setInput('shot_y', s.y);
@@ -448,7 +451,7 @@
       drag = { kind, index: Number(marker.dataset.index), start: p, moved: false };
       marker.classList.add('dragging');
     } else if (state.tool === 'defender') {
-      if (manualDefenders()) return;
+      if (manualDefenders() || state.defenders.length >= MAX_DEFENDERS) return;
       state.defenders.push(p);
       drag = { kind: 'defender', index: state.defenders.length - 1, start: p, moved: true };
     } else {

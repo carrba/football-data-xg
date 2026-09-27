@@ -172,7 +172,7 @@ The `cloudfront_url` Terraform output is the public URL for the xG predictor.
 
 Only `shot_x` and `shot_y` are required; all other fields have sensible defaults.
 
-`defenders` is a list of outfield defender positions (max 20, goalkeeper excluded);
+`defenders` is a list of outfield defender positions (max 10, goalkeeper excluded);
 the Lambda derives `nearest_defender`, `defender_density` and `defenders_between`
 from it. Instead of `defenders` you can send those three values directly
 (e.g. `"nearest_defender": 10, "defender_density": 0, "defenders_between": 1`) —
