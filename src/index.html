@@ -24,7 +24,7 @@
       border-radius: 12px;
       padding: 2rem;
       width: 100%;
-      max-width: 560px;
+      max-width: 720px;
     }
 
     h1 { font-size: 1.4rem; margin-bottom: 0.25rem; }
@@ -52,6 +52,7 @@
       width: 100%;
     }
     input:focus, select:focus { outline: none; border-color: #58a6ff; }
+    input:disabled { color: #8b949e; }
 
     .section-label {
       font-size: 0.75rem;
@@ -69,6 +70,42 @@
     }
     .checkbox-row input[type=checkbox] { width: auto; }
     .checkbox-row label { text-transform: none; font-size: 0.9rem; color: #e6edf3; letter-spacing: 0; }
+
+    /* Pitch */
+    .toolbar { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem; }
+    .tool {
+      display: flex; align-items: center; gap: 0.4rem;
+      background: #0d1117; border: 1px solid #30363d; border-radius: 6px;
+      color: #e6edf3; padding: 0.4rem 0.7rem; font-size: 0.85rem; cursor: pointer;
+    }
+    .tool[aria-pressed=true] { border-color: #58a6ff; background: #0d2440; }
+    .tool:disabled { opacity: 0.35; cursor: not-allowed; }
+    .tool .dot { width: 0.7rem; height: 0.7rem; border-radius: 50%; border: 1px solid #fff; }
+    .tool.clear { margin-left: auto; color: #8b949e; }
+    .hint { font-size: 0.8rem; color: #8b949e; margin-bottom: 0.5rem; min-height: 1.2em; }
+
+    #pitch-svg {
+      display: block; width: 100%; height: auto;
+      border-radius: 8px; background: #1f5f2c;
+      touch-action: none; user-select: none; cursor: crosshair;
+    }
+    #pitch-svg .line { fill: none; stroke: rgba(255,255,255,0.8); stroke-width: 0.3; }
+    #pitch-svg .marker { stroke: #fff; stroke-width: 0.35; cursor: grab; }
+    #pitch-svg .marker.dragging { cursor: grabbing; }
+    #pitch-svg .marker.in-cone { stroke: #58a6ff; stroke-width: 0.7; }
+    #pitch-svg .marker.in-radius:not(.in-cone) { stroke: #e3b341; stroke-width: 0.6; }
+    #pitch-svg.penalty #cone, #pitch-svg.penalty #radius,
+    #pitch-svg.penalty #keeper, #pitch-svg.penalty #defenders,
+    #pitch-svg.manual-defenders #defenders { opacity: 0.25; }
+    #pitch-svg.penalty .marker, #pitch-svg.penalty { cursor: not-allowed; }
+
+    .legend { display: flex; flex-wrap: wrap; gap: 1rem; font-size: 0.75rem; color: #8b949e; margin-top: 0.4rem; }
+    .legend span::before {
+      content: ""; display: inline-block; width: 0.7rem; height: 0.7rem; margin-right: 0.3rem;
+      vertical-align: -0.1rem; border-radius: 2px;
+    }
+    .legend .l-cone::before { background: rgba(88,166,255,0.35); border: 1px solid #58a6ff; }
+    .legend .l-radius::before { border: 1px dashed #e3b341; border-radius: 50%; }
 
     button[type=submit] {
       width: 100%;
@@ -105,6 +142,12 @@
     }
     .xg-bar-wrap { background: #21262d; border-radius: 4px; height: 8px; overflow: hidden; }
     .xg-bar { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
+    .feature-list {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+      gap: 0.5rem; margin-top: 1rem; text-align: left;
+    }
+    .feature-list div { font-size: 0.8rem; color: #8b949e; }
+    .feature-list b { display: block; color: #e6edf3; font-size: 1rem; }
 
     details { border: 1px solid #30363d; border-radius: 6px; overflow: hidden; }
     summary {
@@ -116,6 +159,7 @@
       background: #0d1117;
     }
     summary:hover { color: #e6edf3; }
+    details .details-body { padding: 0.8rem; }
     pre {
       margin: 0;
       padding: 0.8rem;
@@ -140,31 +184,52 @@
 <body>
 <div class="card">
   <h1>xG Predictor</h1>
-  <p class="subtitle">Expected goals model — enter shot details below</p>
+  <p class="subtitle">Expected goals model — place the shooter, goalkeeper and defenders on the pitch</p>
 
   <form id="xg-form" novalidate>
-    <div class="section-label">Shot Position</div>
-    <details style="margin-bottom:0.75rem;border:1px solid #30363d;border-radius:6px;overflow:hidden">
-      <summary style="padding:0.5rem 0.75rem;cursor:pointer;font-size:0.82rem;color:#8b949e;background:#0d1117;user-select:none">
-        Show pitch coordinate reference
-      </summary>
-      <div style="background:#0d1117;padding:0.5rem;text-align:center">
-        <img src="images/pitch_dims.jpg" alt="Pitch coordinate diagram"
-             style="max-width:100%;height:auto;border-radius:4px;opacity:0.9" />
-        <p style="font-size:0.75rem;color:#8b949e;margin-top:0.4rem">
-          x: 0 (own goal line) → 120 (opponent goal line) &nbsp;|&nbsp; y: 0 (top) → 80 (bottom)
-        </p>
-      </div>
-    </details>
-    <div class="field-group">
-      <div class="field">
-        <label for="shot_x">Shot X <span style="color:#8b949e">(0–120)</span></label>
-        <input type="number" id="shot_x" name="shot_x" value="104" min="0" max="120" step="0.1" required />
-      </div>
-      <div class="field">
-        <label for="shot_y">Shot Y <span style="color:#8b949e">(0–80)</span></label>
-        <input type="number" id="shot_y" name="shot_y" value="45" min="0" max="80" step="0.1" required />
-      </div>
+    <div class="toolbar" role="group" aria-label="What to place">
+      <button type="button" class="tool" data-tool="shooter" aria-pressed="true">
+        <span class="dot" style="background:#f2cc60"></span>Shooter
+      </button>
+      <button type="button" class="tool" data-tool="keeper" aria-pressed="false">
+        <span class="dot" style="background:#f0883e"></span>Goalkeeper
+      </button>
+      <button type="button" class="tool" data-tool="defender" aria-pressed="false">
+        <span class="dot" style="background:#f85149"></span>Defender
+      </button>
+      <button type="button" class="tool clear" id="clear-defenders">Clear defenders</button>
+    </div>
+    <p class="hint" id="hint"></p>
+
+    <!-- Pitch drawn in StatsBomb coordinates (x 60–120, y 0–80) inside #pitch;
+         the group transform turns it so the goal is at the top. -->
+    <svg id="pitch-svg" viewBox="-3 -4 86 67" aria-label="Attacking half of the pitch">
+      <defs>
+        <clipPath id="pitch-clip"><rect x="60" y="0" width="60" height="80" /></clipPath>
+        <clipPath id="outside-box-clip"><rect x="60" y="0" width="42" height="80" /></clipPath>
+      </defs>
+      <g id="pitch" transform="matrix(0 -1 1 0 0 120)">
+        <rect id="grass" x="60" y="0" width="60" height="80" fill="#1f5f2c" />
+        <g id="stripes" clip-path="url(#pitch-clip)"></g>
+        <rect class="line" x="60" y="0" width="60" height="80" />
+        <rect class="line" x="102" y="18" width="18" height="44" />
+        <rect class="line" x="114" y="30" width="6" height="20" />
+        <rect class="line" x="120" y="36" width="2" height="8" style="fill:rgba(255,255,255,0.15)" />
+        <circle class="line" cx="60" cy="40" r="10" clip-path="url(#pitch-clip)" />
+        <circle class="line" cx="108" cy="40" r="10" clip-path="url(#outside-box-clip)" />
+        <circle cx="108" cy="40" r="0.35" fill="rgba(255,255,255,0.8)" />
+
+        <polygon id="cone" fill="rgba(88,166,255,0.22)" stroke="#58a6ff" stroke-width="0.2" pointer-events="none" />
+        <circle id="radius" r="5" fill="none" stroke="#e3b341" stroke-width="0.25" stroke-dasharray="0.8 0.6" pointer-events="none" />
+
+        <g id="defenders"></g>
+        <circle id="keeper" class="marker" r="1.4" fill="#f0883e" data-kind="keeper" />
+        <circle id="shooter" class="marker" r="1.4" fill="#f2cc60" data-kind="shooter" />
+      </g>
+    </svg>
+    <div class="legend">
+      <span class="l-cone">Shooting cone — defenders inside are "between"</span>
+      <span class="l-radius">~5-yard radius — defenders crowding the shooter</span>
     </div>
 
     <div class="section-label">Shot Details</div>
@@ -192,33 +257,51 @@
       <label for="under_pressure">Under pressure from defender</label>
     </div>
 
-    <div class="section-label">Goalkeeper</div>
-    <div class="field-group">
-      <div class="field">
-        <label for="keeper_x">Keeper X</label>
-        <input type="number" id="keeper_x" name="keeper_x" value="118" step="0.1" />
-      </div>
-      <div class="field">
-        <label for="keeper_y">Keeper Y</label>
-        <input type="number" id="keeper_y" name="keeper_y" value="40" step="0.1" />
-      </div>
-    </div>
+    <details style="margin-top:0.75rem">
+      <summary>Advanced — enter values manually</summary>
+      <div class="details-body">
+        <div class="field-group">
+          <div class="field">
+            <label for="shot_x">Shot X <span style="color:#8b949e">(0–120)</span></label>
+            <input type="number" id="shot_x" min="0" max="120" step="0.1" />
+          </div>
+          <div class="field">
+            <label for="shot_y">Shot Y <span style="color:#8b949e">(0–80)</span></label>
+            <input type="number" id="shot_y" min="0" max="80" step="0.1" />
+          </div>
+          <div class="field">
+            <label for="keeper_x">Keeper X</label>
+            <input type="number" id="keeper_x" step="0.1" />
+          </div>
+          <div class="field">
+            <label for="keeper_y">Keeper Y</label>
+            <input type="number" id="keeper_y" step="0.1" />
+          </div>
+        </div>
 
-    <div class="section-label">Defenders</div>
-    <div class="field-group">
-      <div class="field">
-        <label for="nearest_defender">Nearest Defender (m)</label>
-        <input type="number" id="nearest_defender" name="nearest_defender" value="2.3" min="0" step="0.1" />
+        <div class="checkbox-row">
+          <input type="checkbox" id="manual_defenders" />
+          <label for="manual_defenders">Enter defender stats manually instead of using the pitch</label>
+        </div>
+        <div class="field-group">
+          <div class="field">
+            <label for="nearest_defender">Nearest Defender</label>
+            <input type="number" id="nearest_defender" value="2.3" min="0" step="0.1" disabled />
+          </div>
+          <div class="field">
+            <label for="defender_density">Within ~5 yards (0–8)</label>
+            <input type="number" id="defender_density" value="1" min="0" max="8" step="1" disabled />
+          </div>
+          <div class="field full">
+            <label for="defenders_between">In shooting cone (0–10)</label>
+            <input type="number" id="defenders_between" value="0" min="0" max="10" step="1" disabled />
+          </div>
+        </div>
+        <p style="font-size:0.75rem;color:#8b949e">
+          Coordinates use the StatsBomb 120 × 80 grid: x 0 (own goal line) → 120 (opponent goal line).
+        </p>
       </div>
-      <div class="field">
-        <label for="defender_density">Defender Density (0–8)</label>
-        <input type="number" id="defender_density" name="defender_density" value="1" min="0" max="8" step="1" />
-      </div>
-      <div class="field full">
-        <label for="defenders_between">Defenders Between Shot &amp; Goal (0–10)</label>
-        <input type="number" id="defenders_between" name="defenders_between" value="0" min="0" max="10" step="1" />
-      </div>
-    </div>
+    </details>
 
     <button type="submit" id="submit-btn">Predict xG</button>
   </form>
@@ -233,51 +316,240 @@
 </div>
 
 <script>
-  const form = document.getElementById('xg-form');
-  const btn  = document.getElementById('submit-btn');
-  const resultEl  = document.getElementById('result');
-  const xgDisplay = document.getElementById('xg-display');
-  const jsonOut   = document.getElementById('json-out');
+  const LEFT_POST = { x: 120, y: 36 };
+  const RIGHT_POST = { x: 120, y: 44 };
+  const DENSITY_RADIUS = 5;
+  const PENALTY_SPOT = { x: 108, y: 40 };
+  const MAX_DEFENDERS = 10;  // outfield players; matches the API limit
+  const SVG_NS = 'http://www.w3.org/2000/svg';
 
-  // Hide keeper/defender fields for Penalty
-  document.getElementById('play_type').addEventListener('change', function () {
-    const isPenalty = this.value === 'Penalty';
-    ['keeper_x','keeper_y','nearest_defender','defender_density','defenders_between'].forEach(id => {
-      const field = document.getElementById(id).closest('.field');
-      field.style.opacity = isPenalty ? '0.35' : '1';
-      document.getElementById(id).disabled = isPenalty;
+  const HINTS = {
+    shooter: 'Click the pitch to place the shooter. Drag any marker to move it.',
+    keeper: 'Click the pitch to place the goalkeeper.',
+    defender: 'Click to add a defender; click a defender to remove it. Drag to move.',
+    defenderMax: `All ${MAX_DEFENDERS} outfield defenders placed — click one to remove it, or drag to move.`,
+    penalty: 'Penalty — shot is taken from the spot; keeper and defenders are not used.',
+  };
+
+  const state = {
+    tool: 'shooter',
+    shooter: { x: 104, y: 45 },
+    keeper: { x: 118, y: 40 },
+    // One defender ~2.3 units from the shooter, outside the cone — equivalent to
+    // the API's default numeric values.
+    defenders: [{ x: 102.5, y: 46.7 }],
+    savedShooter: null,
+  };
+
+  const $ = (id) => document.getElementById(id);
+  const svg = $('pitch-svg');
+  const pitchG = $('pitch');
+  const form = $('xg-form');
+  const btn = $('submit-btn');
+  const resultEl = $('result');
+  const xgDisplay = $('xg-display');
+  const jsonOut = $('json-out');
+
+  const isPenalty = () => $('play_type').value === 'Penalty';
+  const manualDefenders = () => $('manual_defenders').checked;
+  const round1 = (v) => Math.round(v * 10) / 10;
+  const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+
+  // Grass stripes, drawn once
+  for (let x = 60; x < 120; x += 12) {
+    const r = document.createElementNS(SVG_NS, 'rect');
+    Object.entries({ x, y: 0, width: 6, height: 80, fill: 'rgba(255,255,255,0.04)' })
+      .forEach(([k, v]) => r.setAttribute(k, v));
+    $('stripes').appendChild(r);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Geometry (display only — the Lambda computes the authoritative features)
+  // ---------------------------------------------------------------------------
+  function inCone(p, s) {
+    // Is p inside the triangle shooter -> left post -> right post?
+    const v0 = [LEFT_POST.x - s.x, LEFT_POST.y - s.y];
+    const v1 = [RIGHT_POST.x - s.x, RIGHT_POST.y - s.y];
+    const v2 = [p.x - s.x, p.y - s.y];
+    const dot = (a, b) => a[0] * b[0] + a[1] * b[1];
+    const d00 = dot(v0, v0), d01 = dot(v0, v1), d02 = dot(v0, v2), d11 = dot(v1, v1), d12 = dot(v1, v2);
+    const inv = 1 / (d00 * d11 - d01 * d01 + 1e-9);
+    const u = (d11 * d02 - d01 * d12) * inv;
+    const v = (d00 * d12 - d01 * d02) * inv;
+    return u >= 0 && v >= 0 && u + v <= 1;
+  }
+  const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+
+  function toPitch(evt) {
+    const pt = new DOMPoint(evt.clientX, evt.clientY).matrixTransform(pitchG.getScreenCTM().inverse());
+    return { x: clamp(round1(pt.x), 60, 120), y: clamp(round1(pt.y), 0, 80) };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Rendering
+  // ---------------------------------------------------------------------------
+  function setPos(el, p) { el.setAttribute('cx', p.x); el.setAttribute('cy', p.y); }
+
+  function setInput(id, value) {
+    const el = $(id);
+    if (document.activeElement !== el && parseFloat(el.value) !== value) el.value = value;
+  }
+
+  function render() {
+    const s = state.shooter;
+    setPos($('shooter'), s);
+    setPos($('keeper'), state.keeper);
+    setPos($('radius'), s);
+    $('cone').setAttribute('points',
+      `${s.x},${s.y} ${LEFT_POST.x},${LEFT_POST.y} ${RIGHT_POST.x},${RIGHT_POST.y}`);
+
+    const g = $('defenders');
+    g.replaceChildren(...state.defenders.map((d, i) => {
+      const c = document.createElementNS(SVG_NS, 'circle');
+      c.setAttribute('r', 1.2);
+      c.setAttribute('fill', '#f85149');
+      c.setAttribute('class', 'marker'
+        + (inCone(d, s) ? ' in-cone' : '')
+        + (dist(d, s) <= DENSITY_RADIUS ? ' in-radius' : ''));
+      c.dataset.kind = 'defender';
+      c.dataset.index = i;
+      setPos(c, d);
+      return c;
+    }));
+
+    svg.classList.toggle('penalty', isPenalty());
+    svg.classList.toggle('manual-defenders', manualDefenders());
+
+    document.querySelectorAll('.tool[data-tool]').forEach((b) => {
+      b.setAttribute('aria-pressed', String(b.dataset.tool === state.tool));
+      b.disabled = isPenalty()
+        || (b.dataset.tool === 'defender' && manualDefenders());
+    });
+    $('clear-defenders').disabled = isPenalty() || manualDefenders() || !state.defenders.length;
+    const atMax = state.tool === 'defender' && state.defenders.length >= MAX_DEFENDERS;
+    $('hint').textContent = isPenalty() ? HINTS.penalty : atMax ? HINTS.defenderMax : HINTS[state.tool];
+
+    setInput('shot_x', s.x);
+    setInput('shot_y', s.y);
+    setInput('keeper_x', state.keeper.x);
+    setInput('keeper_y', state.keeper.y);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Pointer interaction (mouse + touch)
+  // ---------------------------------------------------------------------------
+  let drag = null;
+
+  svg.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0 || isPenalty()) return;
+    const p = toPitch(e);
+    const marker = e.target.closest('.marker');
+
+    if (marker) {
+      const kind = marker.dataset.kind;
+      if (kind === 'defender' && manualDefenders()) return;
+      drag = { kind, index: Number(marker.dataset.index), start: p, moved: false };
+      marker.classList.add('dragging');
+    } else if (state.tool === 'defender') {
+      if (manualDefenders() || state.defenders.length >= MAX_DEFENDERS) return;
+      state.defenders.push(p);
+      drag = { kind: 'defender', index: state.defenders.length - 1, start: p, moved: true };
+    } else {
+      state[state.tool] = p;
+      drag = { kind: state.tool, start: p, moved: true };
+    }
+    svg.setPointerCapture(e.pointerId);
+    render();
+  });
+
+  svg.addEventListener('pointermove', (e) => {
+    if (!drag) return;
+    const p = toPitch(e);
+    if (!drag.moved && dist(p, drag.start) < 0.5) return;
+    drag.moved = true;
+    if (drag.kind === 'defender') state.defenders[drag.index] = p;
+    else state[drag.kind] = p;
+    render();
+  });
+
+  function endDrag() {
+    if (!drag) return;
+    // A click (no drag) on a defender while the Defender tool is active removes it
+    if (!drag.moved && drag.kind === 'defender' && state.tool === 'defender') {
+      state.defenders.splice(drag.index, 1);
+    }
+    drag = null;
+    render();
+  }
+  svg.addEventListener('pointerup', endDrag);
+  svg.addEventListener('pointercancel', endDrag);
+
+  document.querySelectorAll('.tool[data-tool]').forEach((b) =>
+    b.addEventListener('click', () => { state.tool = b.dataset.tool; render(); }));
+
+  $('clear-defenders').addEventListener('click', () => { state.defenders = []; render(); });
+
+  // Advanced inputs -> markers
+  [['shot_x', 'shooter', 'x'], ['shot_y', 'shooter', 'y'],
+   ['keeper_x', 'keeper', 'x'], ['keeper_y', 'keeper', 'y']].forEach(([id, key, axis]) => {
+    $(id).addEventListener('input', () => {
+      const v = parseFloat($(id).value);
+      if (Number.isFinite(v)) { state[key] = { ...state[key], [axis]: v }; render(); }
     });
   });
 
+  $('manual_defenders').addEventListener('change', () => {
+    ['nearest_defender', 'defender_density', 'defenders_between']
+      .forEach((id) => { $(id).disabled = !manualDefenders() || isPenalty(); });
+    if (manualDefenders() && state.tool === 'defender') state.tool = 'shooter';
+    render();
+  });
+
+  $('play_type').addEventListener('change', () => {
+    if (isPenalty()) {
+      state.savedShooter = state.shooter;
+      state.shooter = { ...PENALTY_SPOT };
+    } else if (state.savedShooter) {
+      state.shooter = state.savedShooter;
+      state.savedShooter = null;
+    }
+    ['shot_x', 'shot_y', 'keeper_x', 'keeper_y', 'manual_defenders'].forEach((id) => { $(id).disabled = isPenalty(); });
+    ['nearest_defender', 'defender_density', 'defenders_between']
+      .forEach((id) => { $(id).disabled = isPenalty() || !manualDefenders(); });
+    render();
+  });
+
+  // ---------------------------------------------------------------------------
+  // Prediction — only on submit, never on drag (CloudWatch alarm is at
+  // 200 invocations / 12 h)
+  // ---------------------------------------------------------------------------
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     btn.disabled = true;
     btn.textContent = 'Predicting…';
     resultEl.style.display = 'none';
 
-    const endpoint = '/predict';
-
     const payload = {
-      shot_x:            parseFloat(document.getElementById('shot_x').value),
-      shot_y:            parseFloat(document.getElementById('shot_y').value),
-      body_part:         document.getElementById('body_part').value,
-      play_type:         document.getElementById('play_type').value,
-      under_pressure:    document.getElementById('under_pressure').checked,
-      keeper_x:          parseFloat(document.getElementById('keeper_x').value),
-      keeper_y:          parseFloat(document.getElementById('keeper_y').value),
-      nearest_defender:  parseFloat(document.getElementById('nearest_defender').value),
-      defender_density:  parseInt(document.getElementById('defender_density').value, 10),
-      defenders_between: parseInt(document.getElementById('defenders_between').value, 10),
+      shot_x:         state.shooter.x,
+      shot_y:         state.shooter.y,
+      body_part:      $('body_part').value,
+      play_type:      $('play_type').value,
+      under_pressure: $('under_pressure').checked,
     };
-
-    if (payload.play_type === 'Penalty') {
-      delete payload.keeper_x; delete payload.keeper_y;
-      delete payload.nearest_defender; delete payload.defender_density;
-      delete payload.defenders_between;
+    if (!isPenalty()) {
+      payload.keeper_x = state.keeper.x;
+      payload.keeper_y = state.keeper.y;
+      if (manualDefenders()) {
+        payload.nearest_defender  = parseFloat($('nearest_defender').value);
+        payload.defender_density  = parseInt($('defender_density').value, 10);
+        payload.defenders_between = parseInt($('defenders_between').value, 10);
+      } else {
+        payload.defenders = state.defenders.map((d) => [d.x, d.y]);
+      }
     }
 
     try {
-      const res  = await fetch(endpoint, {
+      const res  = await fetch('/predict', {
         method:  'POST',
         headers: { 'Content-Type': 'text/plain' },
         body:    JSON.stringify(payload),
@@ -300,27 +572,51 @@
     }
   });
 
+  function fmt(v, digits = 1) {
+    return (v === null || v === undefined) ? '—' : Number(v).toFixed(digits);
+  }
+
   function showResult(data) {
     const xg  = data.xg ?? 0;
     const pct = (xg * 100).toFixed(1);
     const color = xg < 0.10 ? '#f85149' : xg < 0.25 ? '#e3b341' : '#2ea043';
+    const f = data.features || {};
 
     xgDisplay.innerHTML = `
       <div class="xg-label">Expected Goals</div>
       <div class="xg-value" style="color:${color}">${pct}<span style="font-size:1.5rem;color:#8b949e">%</span></div>
       <div class="xg-bar-wrap" style="margin-top:0.5rem">
         <div class="xg-bar" style="width:${Math.min(xg * 100, 100)}%;background:${color}"></div>
+      </div>
+      <div class="feature-list">
+        <div>Distance<b>${fmt(f.distance)}</b></div>
+        <div>Angle<b>${f.angle == null ? '—' : fmt(f.angle * 180 / Math.PI) + '°'}</b></div>
+        <div>Nearest defender<b>${fmt(f.nearest_defender)}</b></div>
+        <div>Within ~5 yards<b>${fmt(f.defender_density, 0)}</b></div>
+        <div>In shooting cone<b>${fmt(f.defenders_between, 0)}</b></div>
       </div>`;
+
+    // Show the server-computed defender stats in the Advanced panel
+    if (!manualDefenders() && !isPenalty()) {
+      $('nearest_defender').value = fmt(f.nearest_defender, 2);
+      $('defender_density').value = fmt(f.defender_density, 0);
+      $('defenders_between').value = fmt(f.defenders_between, 0);
+    }
 
     jsonOut.textContent = JSON.stringify(data, null, 2);
     resultEl.style.display = 'block';
   }
 
   function showError(msg) {
-    xgDisplay.innerHTML = `<div class="error">${msg}</div>`;
+    const div = document.createElement('div');
+    div.className = 'error';
+    div.textContent = msg;
+    xgDisplay.replaceChildren(div);
     jsonOut.textContent = '';
     resultEl.style.display = 'block';
   }
+
+  render();
 </script>
 </body>
 </html>

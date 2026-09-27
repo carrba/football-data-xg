@@ -27,7 +27,8 @@ notebooks/
 
 src/
   lambda_function.py  # AWS Lambda handler — accepts shot features, returns xG
-  index.html          # Static web UI (dark-themed form → calls the API)
+  features.py         # Shot feature engineering shared by notebook 01 and the Lambda
+  index.html          # Static web UI (click-to-place pitch → calls the API)
   Dockerfile          # Container image for Lambda (linux/amd64)
   requirements.txt    # Python deps: xgboost, scikit-learn, pandas, boto3
   build_image.ps1     # PowerShell helper to build & push the Docker image
@@ -63,8 +64,12 @@ terraform/            # Infrastructure-as-Code (AWS provider ~> 6.x)
 | `under_pressure` | Defender within ~2 m at the moment of the shot |
 | `keeper_x / keeper_y` | Goalkeeper position |
 | `nearest_defender` | Distance to the closest outfield defender |
-| `defender_density` | Defenders within a ~3-unit radius |
-| `defenders_between` | Defenders blocking the sightline to goal |
+| `defender_density` | Defenders within 5 units (~5 yards) of the shooter |
+| `defenders_between` | Defenders inside the shooting cone (triangle shooter → left post → right post) |
+
+The defender features are computed from player positions by `src/features.py`,
+used both when building the training data (notebook 01) and by the Lambda when a
+request sends `defenders` positions, so training and serving can't drift.
 
 ---
 
@@ -87,9 +92,10 @@ Open the notebooks in order:
 ### 3. Test the Lambda handler locally
 
 ```bash
+cd src
 python - <<'EOF'
-import json, src.lambda_function as lf
-event = json.load(open("src/input_example.json"))
+import json, lambda_function as lf
+event = json.load(open("input_example.json"))
 print(lf.handler(event, None))
 EOF
 ```
@@ -160,13 +166,18 @@ The `cloudfront_url` Terraform output is the public URL for the xG predictor.
   "under_pressure": false,
   "keeper_x": 118.0,
   "keeper_y": 42.0,
-  "nearest_defender": 10,
-  "defender_density": 0,
-  "defenders_between": 1
+  "defenders": [[110.0, 41.0], [102.5, 46.7]]
 }
 ```
 
 Only `shot_x` and `shot_y` are required; all other fields have sensible defaults.
+
+`defenders` is a list of outfield defender positions (max 10, goalkeeper excluded);
+the Lambda derives `nearest_defender`, `defender_density` and `defenders_between`
+from it. Instead of `defenders` you can send those three values directly
+(e.g. `"nearest_defender": 10, "defender_density": 0, "defenders_between": 1`) —
+if both are sent, `defenders` wins. With an empty list, the features get the same
+fills as missing values in training.
 
 **Response**
 
