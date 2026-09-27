@@ -125,18 +125,23 @@ terraform apply -var-file=terraform.tfvars
 # 2. Build & push the container image (commands printed by Terraform)
 terraform output -raw docker_push_commands | bash
 
-# 3. Roll the Lambda onto the freshly pushed image.
-#    image_uri is pinned to the mutable ":latest" tag, so `terraform apply`
-#    sees no change after a push — update the function code directly:
-aws lambda update-function-code \
-  --function-name football-xg-predict \
-  --image-uri "$(terraform output -raw ecr_repository_url):latest"
-# (equivalently: terraform apply -replace=aws_lambda_function.xg_predict)
+# 3. Re-apply — the Lambda's image_uri is resolved from the ":latest" tag's
+#    digest (see lambda.tf), so a new push is a real plan diff and this
+#    rolls the function onto it automatically.
+terraform apply -var-file=terraform.tfvars
 ```
 
 `index.html`, the pitch diagram, and the model artefacts under `models/` are
 uploaded to S3 by Terraform (`s3.tf`) — no manual `aws s3 cp` step is needed.
 Re-run `terraform apply` whenever those files change.
+
+Note: a model-only update (new `.pkl`s, no code change) uploads to S3 fine,
+but Lambda caches the model in memory per execution environment with no
+freshness check — warm containers keep serving the old model until they
+recycle. Force it with a no-op config touch:
+`aws lambda update-function-configuration --function-name football-xg-predict --description "models refreshed $(date -u +%Y-%m-%dT%H:%M:%SZ)"`.
+A real code/image deploy (the steps above) doesn't need this — updating
+`image_uri` already invalidates warm environments on its own.
 
 The `cloudfront_url` Terraform output is the public URL for the xG predictor.
 
