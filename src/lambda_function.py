@@ -80,9 +80,12 @@ def _load_models():
 VALID_BODY_PARTS = {"Right Foot", "Left Foot", "Head", "Other"}
 VALID_PLAY_TYPES = {"Open Play", "Free Kick", "Penalty"}
 MAX_DEFENDERS = 20
-# Median nearest_defender in data/shots_clean.csv — notebook 02 fills missing
-# values with it, so a shot with no defenders placed gets the same treatment.
+# Medians in data/shots_clean.csv — notebook 02 fills missing values with them,
+# so inputs the model never had in training (no defenders placed, penalties)
+# get the same treatment here.
 _NEAREST_DEFENDER_FILL = 2.3345
+_KEEPER_X_FILL = 118.1
+_KEEPER_Y_FILL = 40.0
 
 
 def _parse_defenders(raw) -> list:
@@ -132,10 +135,12 @@ def _validate(event: dict) -> dict:
     params["under_pressure"] = bool(event.get("under_pressure", False))
 
     if play_type == "Penalty":
-        # Keeper / defender fields are zeroed for penalties, matching training data
-        params["keeper_x"] = float("nan")
-        params["keeper_y"] = float("nan")
-        params["nearest_defender"] = 0.0
+        # Training penalties almost never have keeper/defender positions, so
+        # notebook 02 filled them — use the same fills (not NaN or 0, which the
+        # model never saw for penalties and scored at ~11%).
+        params["keeper_x"] = _KEEPER_X_FILL
+        params["keeper_y"] = _KEEPER_Y_FILL
+        params["nearest_defender"] = _NEAREST_DEFENDER_FILL
         params["defender_density"] = 0
         params["defenders_between"] = 0
     else:
